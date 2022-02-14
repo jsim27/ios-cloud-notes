@@ -127,4 +127,10 @@ extension MemoListViewController: UITableViewDelegate {
     let configuration = UISwipeActionsConfiguration(actions: [deleteAction])
     return configuration
   }
+  
+//  func tableView(_ tableView: UITableView, didEndEditingRowAt indexPath: IndexPath?) {
+//    guard let indexPath = indexPath else { return }
+//    tableView.selectRow(at: indexPath, animated: false, scrollPosition: .none)
+//    loadDetail(at: indexPath)
+//  }
 }

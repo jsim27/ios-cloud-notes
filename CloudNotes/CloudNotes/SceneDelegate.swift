@@ -26,6 +26,7 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     splitViewController.setViewController(detailNavigationController, for: .secondary)
     splitViewController.preferredDisplayMode = .oneBesideSecondary
     splitViewController.preferredSplitBehavior = .tile
+    splitViewController.addKeyboardObserver()
     
     window = UIWindow()
     window?.windowScene = windowScene

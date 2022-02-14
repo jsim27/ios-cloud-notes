@@ -35,37 +35,6 @@ final class DetailViewController: UIViewController {
     textView.delegate = self
     
     setNavigationBar()
-    addObservers()
-  }
-  
-  @objc private func keyboardWillShow(_ notification: Notification) {
-    guard
-      let userInfo = notification.userInfo,
-      let keyboardFrame = userInfo[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect else {
-        return
-      }
-    textView.contentInset.bottom = keyboardFrame.height
-    textView.verticalScrollIndicatorInsets.bottom = keyboardFrame.height
-  }
-  
-  @objc private func keyboardWillHide(_ notification: Notification) {
-    textView.contentInset.bottom = 0
-    textView.verticalScrollIndicatorInsets.bottom = 0
-  }
-  
-  private func addObservers() {
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(keyboardWillShow),
-      name: UIResponder.keyboardWillShowNotification,
-      object: nil
-    )
-    NotificationCenter.default.addObserver(
-      self,
-      selector: #selector(keyboardWillHide),
-      name: UIResponder.keyboardWillHideNotification,
-      object: nil
-    )
   }
   
   private func setNavigationBar() {
@@ -79,10 +48,13 @@ final class DetailViewController: UIViewController {
 
 extension DetailViewController: MemoDisplayable {
   func show(memo: Memo?) {
-    view.endEditing(true)
     let title = memo?.title ?? ""
     let body = memo?.body ?? ""
     textView.text = title.isEmpty && body.isEmpty ? "" : title + "\n" + body
+    
+    textView.endEditing(true)
+    let topOffset = CGPoint(x: 0.0, y: -textView.safeAreaInsets.top)
+    textView.setContentOffset(topOffset, animated: false)
   }
 }
 
