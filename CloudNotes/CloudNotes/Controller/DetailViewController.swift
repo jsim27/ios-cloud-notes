@@ -11,11 +11,7 @@ final class DetailViewController: UIViewController {
   private var keyboardShowNotification: NSObjectProtocol?
   private var keyboardHideNotification: NSObjectProtocol?
 
-  deinit {
-    removeObservers()
-  }
-  
-  private var currentMemo: Memo {
+  private var currentMemo: (title: String, body: String, lastModified: Date) {
     let memoComponents = textView.text.split(
       separator: "\n",
       maxSplits: 1,
@@ -24,7 +20,11 @@ final class DetailViewController: UIViewController {
     let title = memoComponents[safe: 0] ?? ""
     let body = memoComponents[safe: 1] ?? ""
     let date = Date()
-    return Memo(title: title, body: body, lastModified: date)
+    return (title, body, date)
+  }
+  
+  deinit {
+    removeObservers()
   }
   
   override func viewDidLoad() {
@@ -39,6 +39,7 @@ final class DetailViewController: UIViewController {
       textView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
     ])
     textView.delegate = self
+    textView.isEditable = false
     
     setNavigationBar()
   }
@@ -110,6 +111,7 @@ extension DetailViewController: MemoDisplayable {
     textView.endEditing(true)
     let topOffset = CGPoint(x: 0, y: 0 - view.safeAreaInsets.top)
     textView.setContentOffset(topOffset, animated: false)
+    textView.isEditable = true
   }
 }
 
@@ -117,6 +119,11 @@ extension DetailViewController: MemoDisplayable {
 
 extension DetailViewController: UITextViewDelegate {
   func textViewDidChange(_ textView: UITextView) {
-    delegate?.update(currentMemo)
+    let newMemo = currentMemo
+    delegate?.updateMemo(
+      title: newMemo.title,
+      body: newMemo.body,
+      lastModified: newMemo.lastModified
+    )
   }
 }

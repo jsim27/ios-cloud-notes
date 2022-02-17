@@ -1,9 +1,11 @@
 import UIKit
+import CoreData
 
 private let reuseIdentifier = "Cell"
 
 final class MemoListViewController: UITableViewController {
   weak var delegate: MemoDisplayable?
+  private var managedContext: NSManagedObjectContext!
   private var memos = [Memo]()
   private let firstRowIndexPath = IndexPath(row: 0, section: 0)
   private var currentMemoIndexPath = IndexPath(row: 0, section: 0)
@@ -19,13 +21,17 @@ final class MemoListViewController: UITableViewController {
     setNavigationBar()
     tableView.register(UITableViewCell.self, forCellReuseIdentifier: reuseIdentifier)
     tableView.allowsSelectionDuringEditing = true
-    loadJSON()
-    loadDetail(at: firstRowIndexPath)
+    loadCoreData()
+    if memos.isEmpty == false {
+      loadDetail(at: firstRowIndexPath)
+    }
   }
   
   override func viewWillAppear(_ animated: Bool) {
     super.viewWillAppear(animated)
-    tableView.selectRow(at: currentMemoIndexPath, animated: false, scrollPosition: .top)
+    if memos.isEmpty == false {
+      tableView.selectRow(at: currentMemoIndexPath, animated: false, scrollPosition: .top)
+    }
   }
   
   override func viewDidAppear(_ animated: Bool) {
@@ -90,31 +96,36 @@ final class MemoListViewController: UITableViewController {
   }
 
   @objc private func addMemo() {
-    let newMemo = Memo(title: "", body: "", lastModified: Date())
+    guard let entity = NSEntityDescription.entity(forEntityName: "Memo", in: managedContext) else { return }
+    let newMemo = Memo(entity: entity, insertInto: managedContext)
+    newMemo.id = UUID()
+    newMemo.lastModified = Date()
     if memos.isEmpty {
       memos.append(newMemo)
-      tableView.reloadRows(at: [firstRowIndexPath], with: .fade)
+      if tableView.numberOfRows(inSection: 0) == .zero {
+        tableView.insertRows(at: [firstRowIndexPath], with: .fade)
+      } else {
+        tableView.reloadRows(at: [firstRowIndexPath], with: .fade)
+      }
     } else {
       memos.insert(newMemo, at: 0)
       tableView.insertRows(at: [firstRowIndexPath], with: .fade)
     }
     tableView.selectRow(at: firstRowIndexPath, animated: true, scrollPosition: .top)
+    try? managedContext.save()
     loadDetail(at: firstRowIndexPath)
   }
   
-  private func loadJSON() {
-    guard let data = NSDataAsset(name: "memo")?.data else {
-      return
-    }
+  private func loadCoreData() {
+    let appDelegate = UIApplication.shared.delegate as? AppDelegate
+    managedContext = appDelegate?.persistentContainer.viewContext
+    
+    let request = Memo.fetchRequest()
     do {
-      let decoder = JSONDecoder()
-      decoder.keyDecodingStrategy = .convertFromSnakeCase
-      decoder.dateDecodingStrategy = .secondsSince1970
-      let memo = try decoder.decode([Memo].self, from: data)
-      memos.append(contentsOf: memo)
-      tableView.reloadData()
-    } catch let error {
-      print(error)
+      let results = try managedContext.fetch(request)
+      memos = results
+    } catch let error as NSError {
+      print("Could not fetch \(error), \(error.userInfo)")
     }
   }
 
@@ -128,9 +139,14 @@ final class MemoListViewController: UITableViewController {
 // MARK: - MemoStorable
 
 extension MemoListViewController: MemoStorable {
-  func update(_ memo: Memo) {
+  func updateMemo(title: String, body: String, lastModified: Date) {
     let index = currentMemoIndexPath.row
-    memos[index] = memo
+    let memo = memos[index]
+    memo.title = title
+    memo.body = body
+    memo.lastModified = lastModified
+    try? managedContext.save()
+    
     tableView.reloadData()
     tableView.selectRow(at: currentMemoIndexPath, animated: false, scrollPosition: .none)
   }
@@ -147,7 +163,7 @@ extension MemoListViewController {
     let cell = tableView.dequeueReusableCell(withIdentifier: reuseIdentifier, for: indexPath)
     let memo = memos[indexPath.row]
     var configuration = cell.defaultContentConfiguration()
-    let title = memo.title
+    let title = memo.title ?? ""
     configuration.text = title.isEmpty ? "새로운 메모" : title
     configuration.secondaryAttributedText = memo.subtitle
     configuration.textProperties.numberOfLines = 1
@@ -167,8 +183,11 @@ extension MemoListViewController {
   }
   
   override func tableView(_ tableView: UITableView, trailingSwipeActionsConfigurationForRowAt indexPath: IndexPath) -> UISwipeActionsConfiguration? {
-    let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { _, _, completionHandler in
+    let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [unowned self] _, _, completionHandler in
+      let memo = self.memos[indexPath.row]
+      self.managedContext.delete(memo)
       self.memos.remove(at: indexPath.row)
+      
       if self.memos.isEmpty {
         self.addMemo()
       } else {

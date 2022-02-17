@@ -1,3 +1,5 @@
+import Foundation.NSDate
+
 protocol MemoStorable: AnyObject {
-  func update(_ memo: Memo)
+  func updateMemo(title: String, body: String, lastModified: Date)
 }

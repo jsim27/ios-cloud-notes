@@ -1,9 +1,9 @@
 import UIKit.UIFont
+import CoreData
 
-struct Memo: Decodable {
-  var title: String
-  var body: String
-  var lastModified: Date
+@objc(Memo)
+public class Memo: NSManagedObject {
+  
 }
 
 extension Memo {
@@ -12,8 +12,8 @@ extension Memo {
     dateFormatter.locale = .current
     dateFormatter.dateStyle = .medium
     dateFormatter.timeStyle = .none
-    let dateString = dateFormatter.string(from: lastModified)
-    let truncatedBody = body.truncated(limit: 100)
+    let dateString = dateFormatter.string(from: lastModified ?? Date())
+    let truncatedBody = body?.truncated(limit: 100) ?? ""
     
     let attributedString = NSMutableAttributedString()
     attributedString.append(NSAttributedString(
