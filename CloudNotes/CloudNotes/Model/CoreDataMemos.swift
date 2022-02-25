@@ -17,7 +17,15 @@ class CoreDataMemos {
     return container
   }()
 
-  private init() { }
+  private init() {
+    do {
+      try reload()
+    } catch let error {
+      #if DEBUG
+      print(error)
+      #endif
+    }
+  }
   
   func saveContext() {
     let context = persistentContainer.viewContext
