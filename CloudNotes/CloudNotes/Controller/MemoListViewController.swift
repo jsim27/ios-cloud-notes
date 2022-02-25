@@ -121,24 +121,27 @@ final class MemoListViewController: UITableViewController {
   }
   
   private func removeMemo(at indexPath: IndexPath) {
+    do {
+      try memos.remove(at: indexPath.row)
+      tableView.deleteRows(at: [indexPath], with: .fade)
+      if memos.isEmpty == false {
+        let lastIndex = memos.count - 1
+        currentMemoIndexPath.row -= currentMemoIndexPath.row > lastIndex ?  1 : 0
+        tableView.selectRow(at: currentMemoIndexPath, animated: true, scrollPosition: .none)
+        loadDetail(at: currentMemoIndexPath)
+      } else {
+        delegate?.set(editable: false, needClear: true)
+      }
+    } catch {
+      showAlert(title: "Remove fail")
+    }
+  }
+  
+  private func showRemoveMemo(at indexPath: IndexPath) {
     let alertController = UIAlertController(title: "진짜요?", message: "정말로 삭제하시겠어요?", preferredStyle: .alert)
     let cancel = UIAlertAction(title: "취소", style: .cancel)
     let delete = UIAlertAction(title: "삭제", style: .destructive) { [weak self] _ in
-      guard let self = self else { return }
-      do {
-        try self.memos.remove(at: indexPath.row)
-        self.tableView.deleteRows(at: [indexPath], with: .fade)
-        if self.memos.isEmpty == false {
-          let lastIndex = self.memos.count - 1
-          self.currentMemoIndexPath.row -= self.currentMemoIndexPath.row > lastIndex ?  1 : 0
-          self.tableView.selectRow(at: self.currentMemoIndexPath, animated: true, scrollPosition: .none)
-          self.loadDetail(at: self.currentMemoIndexPath)
-        } else {
-          self.delegate?.set(editable: false, needClear: true)
-        }
-      } catch {
-        self.showAlert(title: "Remove fail")
-      }
+      self?.removeMemo(at: indexPath)
     }
     alertController.addAction(cancel)
     alertController.addAction(delete)
@@ -171,7 +174,7 @@ extension MemoListViewController: MemoStorable {
   
   func removeCurrentMemo() {
     if memos.isEmpty == false {
-      removeMemo(at: currentMemoIndexPath)
+      showRemoveMemo(at: currentMemoIndexPath)
     }
   }
 }
@@ -219,7 +222,7 @@ extension MemoListViewController {
     }
     shareAction.image = UIImage(systemName: "square.and.arrow.up")
     let deleteAction = UIContextualAction(style: .destructive, title: "Delete") { [weak self] _, _, completionHandler in
-      self?.removeMemo(at: indexPath)
+      self?.showRemoveMemo(at: indexPath)
       completionHandler(true)
     }
     deleteAction.image = UIImage(systemName: "trash")
