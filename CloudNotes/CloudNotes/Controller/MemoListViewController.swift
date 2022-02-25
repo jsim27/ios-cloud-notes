@@ -129,7 +129,8 @@ final class MemoListViewController: UITableViewController {
         try self.memos.remove(at: indexPath.row)
         self.tableView.deleteRows(at: [indexPath], with: .fade)
         if self.memos.isEmpty == false {
-          self.currentMemoIndexPath.row -= self.currentMemoIndexPath.row > indexPath.row ?  1 : 0
+          let lastIndex = self.memos.count - 1
+          self.currentMemoIndexPath.row -= self.currentMemoIndexPath.row > lastIndex ?  1 : 0
           self.tableView.selectRow(at: self.currentMemoIndexPath, animated: true, scrollPosition: .none)
           self.loadDetail(at: self.currentMemoIndexPath)
         } else {
